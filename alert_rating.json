@@ -1,0 +1,28 @@
+{
+  "rating": "orange",
+  "justification": {
+    "top_report_ids": [
+      "R08",
+      "R04",
+      "R06",
+      "R02",
+      "R03"
+    ],
+    "top_priority_scores": {
+      "R08": 81.0,
+      "R04": 80.8,
+      "R06": 78.6,
+      "R02": 64.7,
+      "R03": 47.1
+    },
+    "pattern_ids": [
+      "P001",
+      "P002",
+      "P003",
+      "P004"
+    ],
+    "multiple_stations_affected": true,
+    "multiple_parts_affected": true
+  },
+  "recommended_operational_posture": "Maintain controlled production while holding top-priority cases for review and sampling adjacent units."
+}

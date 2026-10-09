@@ -1,0 +1,17 @@
+[
+  {
+    "part_id": "PT-100",
+    "part_name": "Battery Connector Housing",
+    "product_line": "Power Module"
+  },
+  {
+    "part_id": "PT-200",
+    "part_name": "Sensor Mount Bracket",
+    "product_line": "Vision Module"
+  },
+  {
+    "part_id": "PT-300",
+    "part_name": "Shielded Micro Board",
+    "product_line": "Control Board"
+  }
+]

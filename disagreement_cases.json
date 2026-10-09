@@ -1,0 +1,17 @@
+[
+  {
+    "report_id": "R05",
+    "disagreement_reason": "low source model confidence; measurement is near a review threshold but interpreted severity is low",
+    "recommended_follow_up": "Review source images and confirm measurements before closing the case."
+  },
+  {
+    "report_id": "R09",
+    "disagreement_reason": "low source model confidence",
+    "recommended_follow_up": "Review source images and confirm measurements before closing the case."
+  },
+  {
+    "report_id": "R10",
+    "disagreement_reason": "low source model confidence; measurement is near a review threshold but interpreted severity is low; source model used tentative language while disposition is not urgent",
+    "recommended_follow_up": "Review source images and confirm measurements before closing the case."
+  }
+]

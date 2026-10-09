@@ -1,0 +1,92 @@
+[
+  {
+    "report_id": "R01",
+    "defect_category": "solder_voiding",
+    "severity": "medium",
+    "disposition": "reinspect",
+    "reason_short": "medium solder voiding based on void_ratio 0.18 and note evidence.",
+    "translated": false,
+    "original_language": "en"
+  },
+  {
+    "report_id": "R02",
+    "defect_category": "pin_misalignment",
+    "severity": "high",
+    "disposition": "reinspect",
+    "reason_short": "high pin alignment concern based on 0.24 mm misalignment and note evidence.",
+    "translated": false,
+    "original_language": "en"
+  },
+  {
+    "report_id": "R03",
+    "defect_category": "surface_scratch",
+    "severity": "medium",
+    "disposition": "reinspect",
+    "reason_short": "medium surface scratch based on 6.3 mm scratch evidence.",
+    "translated": false,
+    "original_language": "en"
+  },
+  {
+    "report_id": "R04",
+    "defect_category": "solder_voiding",
+    "severity": "high",
+    "disposition": "hold",
+    "reason_short": "high solder voiding based on void_ratio 0.22 and note evidence.",
+    "translated": false,
+    "original_language": "en"
+  },
+  {
+    "report_id": "R05",
+    "defect_category": "surface_scratch",
+    "severity": "low",
+    "disposition": "monitor",
+    "reason_short": "low surface scratch based on 4.8 mm scratch evidence.",
+    "translated": false,
+    "original_language": "en"
+  },
+  {
+    "report_id": "R06",
+    "defect_category": "solder_voiding",
+    "severity": "high",
+    "disposition": "hold",
+    "reason_short": "high solder voiding based on void_ratio 0.21 and note evidence.",
+    "translated": false,
+    "original_language": "en"
+  },
+  {
+    "report_id": "R07",
+    "defect_category": "surface_scratch",
+    "severity": "medium",
+    "disposition": "reinspect",
+    "reason_short": "medium surface scratch based on 7.1 mm scratch evidence.",
+    "translated": false,
+    "original_language": "en"
+  },
+  {
+    "report_id": "R08",
+    "defect_category": "solder_voiding",
+    "severity": "high",
+    "disposition": "hold",
+    "reason_short": "high solder voiding based on void_ratio 0.24 and note evidence.",
+    "translated": false,
+    "original_language": "en"
+  },
+  {
+    "report_id": "R09",
+    "defect_category": "pin_misalignment",
+    "severity": "medium",
+    "disposition": "reinspect",
+    "reason_short": "medium pin alignment concern based on 0.19 mm misalignment and note evidence.",
+    "translated": true,
+    "original_language": "ms"
+  },
+  {
+    "report_id": "R10",
+    "defect_category": "solder_voiding",
+    "severity": "low",
+    "disposition": "monitor",
+    "reason_short": "low solder voiding based on void_ratio 0.09 and note evidence.",
+    "translated": false,
+    "original_language": "en"
+  }
+]

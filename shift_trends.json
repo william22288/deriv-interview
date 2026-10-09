@@ -1,0 +1,36 @@
+{
+  "defect_distribution": {
+    "pin_misalignment": 2,
+    "solder_voiding": 5,
+    "surface_scratch": 3
+  },
+  "hourly_distribution": {
+    "08:00": {
+      "solder_voiding": 1,
+      "pin_misalignment": 1
+    },
+    "09:00": {
+      "surface_scratch": 1,
+      "solder_voiding": 1
+    },
+    "10:00": {
+      "surface_scratch": 1,
+      "solder_voiding": 1
+    },
+    "11:00": {
+      "surface_scratch": 1,
+      "solder_voiding": 1
+    },
+    "12:00": {
+      "pin_misalignment": 1,
+      "solder_voiding": 1
+    }
+  },
+  "worsening_pattern_ids": [
+    "P001",
+    "P003",
+    "P004"
+  ],
+  "most_affected_station": "XRay-02",
+  "most_affected_product_line": "Power Module"
+}

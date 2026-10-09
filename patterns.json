@@ -1,0 +1,46 @@
+[
+  {
+    "pattern_id": "P001",
+    "title": "Recurring solder voiding on Battery Connector Housing",
+    "supporting_report_ids": [
+      "R01",
+      "R06"
+    ],
+    "pattern_strength": "moderate",
+    "likely_driver": "Repeated void signatures around the same part family and station path: XRay-02.",
+    "recommended_action": "Hold affected cases for quality review and check solder process settings before next release."
+  },
+  {
+    "pattern_id": "P002",
+    "title": "Recurring pin alignment concern on Battery Connector Housing",
+    "supporting_report_ids": [
+      "R02",
+      "R09"
+    ],
+    "pattern_strength": "moderate",
+    "likely_driver": "Multiple alignment findings on Battery Connector Housing suggest placement or fixture drift.",
+    "recommended_action": "Reinspect alignment on recent lots and verify fixture calibration."
+  },
+  {
+    "pattern_id": "P003",
+    "title": "Recurring surface scratch on Sensor Mount Bracket",
+    "supporting_report_ids": [
+      "R03",
+      "R07"
+    ],
+    "pattern_strength": "strong",
+    "likely_driver": "Repeated scratch findings from AOI-05 indicate a possible handling or rework issue.",
+    "recommended_action": "Inspect station handling path and sample adjacent units for the same scratch signature."
+  },
+  {
+    "pattern_id": "P004",
+    "title": "Recurring solder voiding on Shielded Micro Board",
+    "supporting_report_ids": [
+      "R04",
+      "R08"
+    ],
+    "pattern_strength": "strong",
+    "likely_driver": "Repeated void signatures around the same part family and station path: XRay-03.",
+    "recommended_action": "Hold affected cases for quality review and check solder process settings before next release."
+  }
+]

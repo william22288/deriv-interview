@@ -1,0 +1,112 @@
+[
+  {
+    "report_id": "R01",
+    "part_id": "PT-100",
+    "station": "XRay-02",
+    "timestamp": "2026-03-15T08:10:00Z",
+    "operator_note": "Void cluster visible near solder joint J4. Looks borderline but larger than yesterday's examples.",
+    "model_finding": "possible solder voiding",
+    "confidence": 0.82,
+    "measurements": { "void_ratio": 0.18, "misalignment_mm": 0.02, "scratch_length_mm": 0.0 },
+    "image_count": 3
+  },
+  {
+    "report_id": "R02",
+    "part_id": "PT-100",
+    "station": "XRay-01",
+    "timestamp": "2026-03-15T08:35:00Z",
+    "operator_note": "Connector pins look slightly shifted. Not severe, but alignment seems off on left edge.",
+    "model_finding": "pin misalignment",
+    "confidence": 0.77,
+    "measurements": { "void_ratio": 0.01, "misalignment_mm": 0.24, "scratch_length_mm": 0.0 },
+    "image_count": 2
+  },
+  {
+    "report_id": "R03",
+    "part_id": "PT-200",
+    "station": "AOI-05",
+    "timestamp": "2026-03-15T09:00:00Z",
+    "operator_note": "Surface mark across bracket arm. Could be cosmetic but length is noticeable.",
+    "model_finding": "surface scratch",
+    "confidence": 0.91,
+    "measurements": { "void_ratio": 0.0, "misalignment_mm": 0.0, "scratch_length_mm": 6.3 },
+    "image_count": 1
+  },
+  {
+    "report_id": "R04",
+    "part_id": "PT-300",
+    "station": "XRay-03",
+    "timestamp": "2026-03-15T09:20:00Z",
+    "operator_note": "Multiple dark regions around BGA. Possible voiding pattern repeated on two units this morning.",
+    "model_finding": "possible solder voiding",
+    "confidence": 0.88,
+    "measurements": { "void_ratio": 0.22, "misalignment_mm": 0.0, "scratch_length_mm": 0.0 },
+    "image_count": 4
+  },
+  {
+    "report_id": "R05",
+    "part_id": "PT-300",
+    "station": "AOI-02",
+    "timestamp": "2026-03-15T10:05:00Z",
+    "operator_note": "Silkscreen okay, but board edge has a visible scratch. Probably rework-related.",
+    "model_finding": "surface scratch",
+    "confidence": 0.74,
+    "measurements": { "void_ratio": 0.0, "misalignment_mm": 0.0, "scratch_length_mm": 4.8 },
+    "image_count": 2
+  },
+  {
+    "report_id": "R06",
+    "part_id": "PT-100",
+    "station": "XRay-02",
+    "timestamp": "2026-03-15T10:25:00Z",
+    "operator_note": "Another unit with voids near J4. Similar area and shape to earlier case.",
+    "model_finding": "possible solder voiding",
+    "confidence": 0.86,
+    "measurements": { "void_ratio": 0.21, "misalignment_mm": 0.01, "scratch_length_mm": 0.0 },
+    "image_count": 3
+  },
+  {
+    "report_id": "R07",
+    "part_id": "PT-200",
+    "station": "AOI-05",
+    "timestamp": "2026-03-15T11:00:00Z",
+    "operator_note": "Bracket arm has another long line mark. Same region as prior batch from morning lot.",
+    "model_finding": "surface scratch",
+    "confidence": 0.89,
+    "measurements": { "void_ratio": 0.0, "misalignment_mm": 0.0, "scratch_length_mm": 7.1 },
+    "image_count": 1
+  },
+  {
+    "report_id": "R08",
+    "part_id": "PT-300",
+    "station": "XRay-03",
+    "timestamp": "2026-03-15T11:25:00Z",
+    "operator_note": "BGA region still showing void cluster. Third similar board today.",
+    "model_finding": "possible solder voiding",
+    "confidence": 0.9,
+    "measurements": { "void_ratio": 0.24, "misalignment_mm": 0.0, "scratch_length_mm": 0.0 },
+    "image_count": 4
+  },
+  {
+    "report_id": "R09",
+    "part_id": "PT-100",
+    "station": "Manual-01",
+    "timestamp": "2026-03-15T12:00:00Z",
+    "operator_note": "Visual check in Malay: penjajaran pin di sebelah kiri nampak senget sedikit, mungkin perlu semakan kedua.",
+    "model_finding": "pin misalignment",
+    "confidence": 0.72,
+    "measurements": { "void_ratio": 0.0, "misalignment_mm": 0.19, "scratch_length_mm": 0.0 },
+    "image_count": 1
+  },
+  {
+    "report_id": "R10",
+    "part_id": "PT-300",
+    "station": "XRay-01",
+    "timestamp": "2026-03-15T12:30:00Z",
+    "operator_note": "Minor voids present but below usual concern threshold. Logging for traceability.",
+    "model_finding": "possible solder voiding",
+    "confidence": 0.66,
+    "measurements": { "void_ratio": 0.09, "misalignment_mm": 0.0, "scratch_length_mm": 0.0 },
+    "image_count": 2
+  }
+]

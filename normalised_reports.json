@@ -1,0 +1,102 @@
+[
+  {
+    "report_id": "R01",
+    "part_id": "PT-100",
+    "part_name": "Battery Connector Housing",
+    "product_line": "Power Module",
+    "original_operator_note": "Void cluster visible near solder joint J4. Looks borderline but larger than yesterday's examples.",
+    "note_for_interpretation": "Void cluster visible near solder joint J4. Looks borderline but larger than yesterday's examples.",
+    "original_language": "en",
+    "translated": false
+  },
+  {
+    "report_id": "R02",
+    "part_id": "PT-100",
+    "part_name": "Battery Connector Housing",
+    "product_line": "Power Module",
+    "original_operator_note": "Connector pins look slightly shifted. Not severe, but alignment seems off on left edge.",
+    "note_for_interpretation": "Connector pins look slightly shifted. Not severe, but alignment seems off on left edge.",
+    "original_language": "en",
+    "translated": false
+  },
+  {
+    "report_id": "R03",
+    "part_id": "PT-200",
+    "part_name": "Sensor Mount Bracket",
+    "product_line": "Vision Module",
+    "original_operator_note": "Surface mark across bracket arm. Could be cosmetic but length is noticeable.",
+    "note_for_interpretation": "Surface mark across bracket arm. Could be cosmetic but length is noticeable.",
+    "original_language": "en",
+    "translated": false
+  },
+  {
+    "report_id": "R04",
+    "part_id": "PT-300",
+    "part_name": "Shielded Micro Board",
+    "product_line": "Control Board",
+    "original_operator_note": "Multiple dark regions around BGA. Possible voiding pattern repeated on two units this morning.",
+    "note_for_interpretation": "Multiple dark regions around BGA. Possible voiding pattern repeated on two units this morning.",
+    "original_language": "en",
+    "translated": false
+  },
+  {
+    "report_id": "R05",
+    "part_id": "PT-300",
+    "part_name": "Shielded Micro Board",
+    "product_line": "Control Board",
+    "original_operator_note": "Silkscreen okay, but board edge has a visible scratch. Probably rework-related.",
+    "note_for_interpretation": "Silkscreen okay, but board edge has a visible scratch. Probably rework-related.",
+    "original_language": "en",
+    "translated": false
+  },
+  {
+    "report_id": "R06",
+    "part_id": "PT-100",
+    "part_name": "Battery Connector Housing",
+    "product_line": "Power Module",
+    "original_operator_note": "Another unit with voids near J4. Similar area and shape to earlier case.",
+    "note_for_interpretation": "Another unit with voids near J4. Similar area and shape to earlier case.",
+    "original_language": "en",
+    "translated": false
+  },
+  {
+    "report_id": "R07",
+    "part_id": "PT-200",
+    "part_name": "Sensor Mount Bracket",
+    "product_line": "Vision Module",
+    "original_operator_note": "Bracket arm has another long line mark. Same region as prior batch from morning lot.",
+    "note_for_interpretation": "Bracket arm has another long line mark. Same region as prior batch from morning lot.",
+    "original_language": "en",
+    "translated": false
+  },
+  {
+    "report_id": "R08",
+    "part_id": "PT-300",
+    "part_name": "Shielded Micro Board",
+    "product_line": "Control Board",
+    "original_operator_note": "BGA region still showing void cluster. Third similar board today.",
+    "note_for_interpretation": "BGA region still showing void cluster. Third similar board today.",
+    "original_language": "en",
+    "translated": false
+  },
+  {
+    "report_id": "R09",
+    "part_id": "PT-100",
+    "part_name": "Battery Connector Housing",
+    "product_line": "Power Module",
+    "original_operator_note": "Visual check in Malay: penjajaran pin di sebelah kiri nampak senget sedikit, mungkin perlu semakan kedua.",
+    "note_for_interpretation": "Visual check: pin alignment on the left side looks slightly skewed, may need a second review.",
+    "original_language": "ms",
+    "translated": true
+  },
+  {
+    "report_id": "R10",
+    "part_id": "PT-300",
+    "part_name": "Shielded Micro Board",
+    "product_line": "Control Board",
+    "original_operator_note": "Minor voids present but below usual concern threshold. Logging for traceability.",
+    "note_for_interpretation": "Minor voids present but below usual concern threshold. Logging for traceability.",
+    "original_language": "en",
+    "translated": false
+  }
+]

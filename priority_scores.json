@@ -1,0 +1,248 @@
+[
+  {
+    "report_id": "R08",
+    "part_id": "PT-300",
+    "part_name": "Shielded Micro Board",
+    "product_line": "Control Board",
+    "station": "XRay-03",
+    "timestamp": "2026-03-15T11:25:00Z",
+    "defect_category": "solder_voiding",
+    "severity": "high",
+    "disposition": "hold",
+    "priority_score": 81.0,
+    "flagged_for_review": true,
+    "rank": 1,
+    "pattern_ids": [
+      "P004"
+    ],
+    "score_components": {
+      "base_priority": 25,
+      "confidence_bonus": 9.0,
+      "evidence_bonus": 8,
+      "measurement_bonus": 15,
+      "pattern_membership_bonus": 12,
+      "disposition_bonus": 12
+    }
+  },
+  {
+    "report_id": "R04",
+    "part_id": "PT-300",
+    "part_name": "Shielded Micro Board",
+    "product_line": "Control Board",
+    "station": "XRay-03",
+    "timestamp": "2026-03-15T09:20:00Z",
+    "defect_category": "solder_voiding",
+    "severity": "high",
+    "disposition": "hold",
+    "priority_score": 80.8,
+    "flagged_for_review": true,
+    "rank": 2,
+    "pattern_ids": [
+      "P004"
+    ],
+    "score_components": {
+      "base_priority": 25,
+      "confidence_bonus": 8.8,
+      "evidence_bonus": 8,
+      "measurement_bonus": 15,
+      "pattern_membership_bonus": 12,
+      "disposition_bonus": 12
+    }
+  },
+  {
+    "report_id": "R06",
+    "part_id": "PT-100",
+    "part_name": "Battery Connector Housing",
+    "product_line": "Power Module",
+    "station": "XRay-02",
+    "timestamp": "2026-03-15T10:25:00Z",
+    "defect_category": "solder_voiding",
+    "severity": "high",
+    "disposition": "hold",
+    "priority_score": 78.6,
+    "flagged_for_review": true,
+    "rank": 3,
+    "pattern_ids": [
+      "P001"
+    ],
+    "score_components": {
+      "base_priority": 25,
+      "confidence_bonus": 8.6,
+      "evidence_bonus": 6,
+      "measurement_bonus": 15,
+      "pattern_membership_bonus": 12,
+      "disposition_bonus": 12
+    }
+  },
+  {
+    "report_id": "R02",
+    "part_id": "PT-100",
+    "part_name": "Battery Connector Housing",
+    "product_line": "Power Module",
+    "station": "XRay-01",
+    "timestamp": "2026-03-15T08:35:00Z",
+    "defect_category": "pin_misalignment",
+    "severity": "high",
+    "disposition": "reinspect",
+    "priority_score": 64.7,
+    "flagged_for_review": true,
+    "rank": 4,
+    "pattern_ids": [
+      "P002"
+    ],
+    "score_components": {
+      "base_priority": 25,
+      "confidence_bonus": 7.7,
+      "evidence_bonus": 4,
+      "measurement_bonus": 10,
+      "pattern_membership_bonus": 12,
+      "disposition_bonus": 6
+    }
+  },
+  {
+    "report_id": "R03",
+    "part_id": "PT-200",
+    "part_name": "Sensor Mount Bracket",
+    "product_line": "Vision Module",
+    "station": "AOI-05",
+    "timestamp": "2026-03-15T09:00:00Z",
+    "defect_category": "surface_scratch",
+    "severity": "medium",
+    "disposition": "reinspect",
+    "priority_score": 47.1,
+    "flagged_for_review": true,
+    "rank": 5,
+    "pattern_ids": [
+      "P003"
+    ],
+    "score_components": {
+      "base_priority": 10,
+      "confidence_bonus": 9.1,
+      "evidence_bonus": 2,
+      "measurement_bonus": 8,
+      "pattern_membership_bonus": 12,
+      "disposition_bonus": 6
+    }
+  },
+  {
+    "report_id": "R07",
+    "part_id": "PT-200",
+    "part_name": "Sensor Mount Bracket",
+    "product_line": "Vision Module",
+    "station": "AOI-05",
+    "timestamp": "2026-03-15T11:00:00Z",
+    "defect_category": "surface_scratch",
+    "severity": "medium",
+    "disposition": "reinspect",
+    "priority_score": 46.9,
+    "flagged_for_review": false,
+    "rank": 6,
+    "pattern_ids": [
+      "P003"
+    ],
+    "score_components": {
+      "base_priority": 10,
+      "confidence_bonus": 8.9,
+      "evidence_bonus": 2,
+      "measurement_bonus": 8,
+      "pattern_membership_bonus": 12,
+      "disposition_bonus": 6
+    }
+  },
+  {
+    "report_id": "R01",
+    "part_id": "PT-100",
+    "part_name": "Battery Connector Housing",
+    "product_line": "Power Module",
+    "station": "XRay-02",
+    "timestamp": "2026-03-15T08:10:00Z",
+    "defect_category": "solder_voiding",
+    "severity": "medium",
+    "disposition": "reinspect",
+    "priority_score": 42.2,
+    "flagged_for_review": false,
+    "rank": 7,
+    "pattern_ids": [
+      "P001"
+    ],
+    "score_components": {
+      "base_priority": 10,
+      "confidence_bonus": 8.2,
+      "evidence_bonus": 6,
+      "measurement_bonus": 0,
+      "pattern_membership_bonus": 12,
+      "disposition_bonus": 6
+    }
+  },
+  {
+    "report_id": "R09",
+    "part_id": "PT-100",
+    "part_name": "Battery Connector Housing",
+    "product_line": "Power Module",
+    "station": "Manual-01",
+    "timestamp": "2026-03-15T12:00:00Z",
+    "defect_category": "pin_misalignment",
+    "severity": "medium",
+    "disposition": "reinspect",
+    "priority_score": 37.2,
+    "flagged_for_review": false,
+    "rank": 8,
+    "pattern_ids": [
+      "P002"
+    ],
+    "score_components": {
+      "base_priority": 10,
+      "confidence_bonus": 7.2,
+      "evidence_bonus": 2,
+      "measurement_bonus": 0,
+      "pattern_membership_bonus": 12,
+      "disposition_bonus": 6
+    }
+  },
+  {
+    "report_id": "R05",
+    "part_id": "PT-300",
+    "part_name": "Shielded Micro Board",
+    "product_line": "Control Board",
+    "station": "AOI-02",
+    "timestamp": "2026-03-15T10:05:00Z",
+    "defect_category": "surface_scratch",
+    "severity": "low",
+    "disposition": "monitor",
+    "priority_score": 16.4,
+    "flagged_for_review": false,
+    "rank": 9,
+    "pattern_ids": [],
+    "score_components": {
+      "base_priority": 3,
+      "confidence_bonus": 7.4,
+      "evidence_bonus": 4,
+      "measurement_bonus": 0,
+      "pattern_membership_bonus": 0,
+      "disposition_bonus": 2
+    }
+  },
+  {
+    "report_id": "R10",
+    "part_id": "PT-300",
+    "part_name": "Shielded Micro Board",
+    "product_line": "Control Board",
+    "station": "XRay-01",
+    "timestamp": "2026-03-15T12:30:00Z",
+    "defect_category": "solder_voiding",
+    "severity": "low",
+    "disposition": "monitor",
+    "priority_score": 15.6,
+    "flagged_for_review": false,
+    "rank": 10,
+    "pattern_ids": [],
+    "score_components": {
+      "base_priority": 3,
+      "confidence_bonus": 6.6,
+      "evidence_bonus": 4,
+      "measurement_bonus": 0,
+      "pattern_membership_bonus": 0,
+      "disposition_bonus": 2
+    }
+  }
+]

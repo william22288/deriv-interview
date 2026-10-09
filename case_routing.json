@@ -1,0 +1,46 @@
+[
+  {
+    "report_id": "R08",
+    "teams": [
+      "Quality",
+      "Process Engineering",
+      "Manufacturing"
+    ],
+    "briefing_note": "high solder_voiding on Shielded Micro Board scored 81.0 with recurring pattern P004; review disposition is hold."
+  },
+  {
+    "report_id": "R04",
+    "teams": [
+      "Quality",
+      "Process Engineering",
+      "Manufacturing"
+    ],
+    "briefing_note": "high solder_voiding on Shielded Micro Board scored 80.8 with recurring pattern P004; review disposition is hold."
+  },
+  {
+    "report_id": "R06",
+    "teams": [
+      "Quality",
+      "Process Engineering",
+      "Manufacturing"
+    ],
+    "briefing_note": "high solder_voiding on Battery Connector Housing scored 78.6 with recurring pattern P001; review disposition is hold."
+  },
+  {
+    "report_id": "R02",
+    "teams": [
+      "Quality",
+      "Manufacturing"
+    ],
+    "briefing_note": "high pin_misalignment on Battery Connector Housing scored 64.7 with recurring pattern P002; review disposition is reinspect."
+  },
+  {
+    "report_id": "R03",
+    "teams": [
+      "Quality",
+      "Manufacturing",
+      "Process Engineering"
+    ],
+    "briefing_note": "medium surface_scratch on Sensor Mount Bracket scored 47.1 with recurring pattern P003; review disposition is reinspect."
+  }
+]

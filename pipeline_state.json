@@ -1,0 +1,94 @@
+{
+  "stages": [
+    {
+      "stage": "INIT",
+      "timestamp": "2026-10-09T08:25:17Z",
+      "artifacts": []
+    },
+    {
+      "stage": "INPUTS_LOADED",
+      "timestamp": "2026-10-09T08:25:17Z",
+      "artifacts": [
+        "inspection_reports.json",
+        "parts_catalog.json"
+      ]
+    },
+    {
+      "stage": "REPORTS_NORMALISED",
+      "timestamp": "2026-10-09T08:25:17Z",
+      "artifacts": [
+        "normalised_reports.json"
+      ]
+    },
+    {
+      "stage": "REPORTS_INTERPRETED",
+      "timestamp": "2026-10-09T08:25:17Z",
+      "artifacts": [
+        "interpreted_reports.json"
+      ]
+    },
+    {
+      "stage": "PATTERNS_GROUPED",
+      "timestamp": "2026-10-09T08:25:17Z",
+      "artifacts": [
+        "patterns.json"
+      ]
+    },
+    {
+      "stage": "PRIORITIES_COMPUTED",
+      "timestamp": "2026-10-09T08:25:17Z",
+      "artifacts": [
+        "priority_scores.json"
+      ]
+    },
+    {
+      "stage": "CASES_SELECTED",
+      "timestamp": "2026-10-09T08:25:17Z",
+      "artifacts": [
+        "priority_scores.json"
+      ]
+    },
+    {
+      "stage": "ROUTING_COMPLETE",
+      "timestamp": "2026-10-09T08:25:17Z",
+      "artifacts": [
+        "case_routing.json"
+      ]
+    },
+    {
+      "stage": "EXPLANATIONS_GENERATED",
+      "timestamp": "2026-10-09T08:25:17Z",
+      "artifacts": [
+        "review_summaries.md"
+      ]
+    },
+    {
+      "stage": "VALIDATION_COMPLETE",
+      "timestamp": "2026-10-09T08:25:17Z",
+      "artifacts": [
+        "shift_trends.json",
+        "disagreement_cases.json",
+        "alert_rating.json",
+        "reinspection_plan.md"
+      ]
+    },
+    {
+      "stage": "RESULTS_FINALISED",
+      "timestamp": "2026-10-09T08:25:17Z",
+      "artifacts": [
+        "normalised_reports.json",
+        "interpreted_reports.json",
+        "patterns.json",
+        "priority_scores.json",
+        "case_routing.json",
+        "review_summaries.md",
+        "shift_trends.json",
+        "disagreement_cases.json",
+        "alert_rating.json",
+        "reinspection_plan.md",
+        "llm_calls.jsonl",
+        "pipeline_state.json"
+      ]
+    }
+  ]
+}
