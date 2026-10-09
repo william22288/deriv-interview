@@ -1,7 +1,6 @@
 import hashlib
 import json
 import os
-import re
 import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
@@ -90,11 +89,17 @@ def stable_hash(payload: Any) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def record_stage(stage_log: List[Dict[str, Any]], stage: str, artifacts: Iterable[str]) -> None:
+def record_stage(
+    stage_log: List[Dict[str, Any]],
+    stage: str,
+    artifacts: Iterable[str],
+    input_artifacts: Iterable[str] = (),
+) -> None:
     stage_log.append(
         {
             "stage": stage,
             "timestamp": utc_now(),
+            "input_artifacts": list(input_artifacts),
             "artifacts": list(artifacts),
         }
     )
@@ -107,12 +112,16 @@ def log_llm_call(
     prompt_payload: Any,
     input_artifacts: List[str],
     output_artifact: str,
+    provider_response_id: str,
+    input_report_ids: Iterable[str],
 ) -> None:
     record = {
         "stage": stage,
         "timestamp": utc_now(),
         "provider": provider,
         "model": model,
+        "provider_response_id": provider_response_id,
+        "input_report_ids": list(input_report_ids),
         "prompt_hash": stable_hash(prompt_payload),
         "input_artifacts": input_artifacts,
         "output_artifact": output_artifact,
@@ -165,150 +174,106 @@ def load_inputs() -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     return reports, catalog
 
 
-MALAY_MARKERS = {
-    "malay",
-    "penjajaran",
-    "sebelah",
-    "kiri",
-    "nampak",
-    "senget",
-    "sedikit",
-    "mungkin",
-    "perlu",
-    "semakan",
-    "kedua",
-}
-
-
-def detect_language(note: str) -> str:
-    lowered = note.lower()
-    tokens = set(re.findall(r"[a-zA-Z]+", lowered))
-    if tokens & MALAY_MARKERS:
-        return "ms"
-    return "en"
-
-
-def translate_note(note: str, language: str) -> str:
-    if language == "en":
-        return note
-    if language == "ms":
-        if "penjajaran pin" in note.lower():
-            return "Visual check: pin alignment on the left side looks slightly skewed, may need a second review."
-        return f"Translated from Malay for interpretation: {note}"
-    return f"Translated to English for interpretation: {note}"
-
-
 def normalise_reports(reports: List[Dict[str, Any]], catalog: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     parts_by_id = {part["part_id"]: part for part in catalog}
-    normalised = []
+    joined = []
     for report in reports:
         part = parts_by_id[report["part_id"]]
-        language = detect_language(report["operator_note"])
-        translated = language != "en"
-        normalised.append(
+        joined.append(
             {
                 "report_id": report["report_id"],
                 "part_id": report["part_id"],
                 "part_name": part["part_name"],
                 "product_line": part["product_line"],
                 "original_operator_note": report["operator_note"],
-                "note_for_interpretation": translate_note(report["operator_note"], language),
-                "original_language": language,
-                "translated": translated,
+            }
+        )
+
+    prompt_payload = {
+        "stage": "note_normalisation_translation",
+        "schema": {
+            "translations": [
+                {
+                    "report_id": "string",
+                    "original_language": "ISO 639-1 language code, or a clear language name",
+                    "note_for_interpretation": "English translation; preserve the original wording when already English",
+                    "translated": "boolean; true exactly when the source note is not English",
+                }
+            ]
+        },
+        "instruction": (
+            "For every supplied note, identify its language and translate the complete note into natural English "
+            "when it is not English. Do not summarize or omit defect details. Preserve English notes exactly. "
+            "Return exactly one translation record per report_id."
+        ),
+        "reports": joined,
+    }
+    output, response_id, response_model = call_llm_json(prompt_payload)
+    translations = output.get("translations")
+    validate_translations(translations, joined)
+    translations_by_id = {item["report_id"]: item for item in translations}
+    normalised = []
+    for item in joined:
+        translation = translations_by_id[item["report_id"]]
+        normalised.append(
+            {
+                **item,
+                "note_for_interpretation": translation["note_for_interpretation"],
+                "original_language": translation["original_language"],
+                "translated": translation["translated"],
             }
         )
     write_json("normalised_reports.json", normalised)
+    log_llm_call(
+        "note_normalisation_translation",
+        "openai",
+        response_model,
+        prompt_payload,
+        ["inspection_reports.json", "parts_catalog.json"],
+        "normalised_reports.json",
+        response_id,
+        (item["report_id"] for item in joined),
+    )
     return normalised
 
 
-def infer_category(report: Dict[str, Any], normalised: Dict[str, Any]) -> str:
-    text = f"{report['model_finding']} {normalised['note_for_interpretation']}".lower()
-    measurements = report["measurements"]
-    if "void" in text or measurements["void_ratio"] >= 0.05:
-        return "solder_voiding"
-    if "pin" in text or "align" in text or measurements["misalignment_mm"] >= 0.10:
-        return "pin_misalignment"
-    if "scratch" in text or "mark" in text or "line" in text or measurements["scratch_length_mm"] >= 2.0:
-        return "surface_scratch"
-    if max(measurements.values()) == 0:
-        return "no_material_issue"
-    return "uncertain"
+def is_english(language: str) -> bool:
+    value = language.strip().casefold().replace("_", "-")
+    return value in {"en", "eng", "english"} or value.startswith("en-")
 
 
-def infer_severity_and_disposition(category: str, report: Dict[str, Any]) -> Tuple[str, str]:
-    m = report["measurements"]
-    confidence = float(report["confidence"])
-    note = report["operator_note"].lower()
-    if category == "solder_voiding":
-        if m["void_ratio"] >= 0.30:
-            return "critical", "hold"
-        if m["void_ratio"] >= 0.20:
-            return "high", "hold"
-        if m["void_ratio"] >= 0.12 or "borderline" in note:
-            return "medium", "reinspect"
-        return "low", "monitor"
-    if category == "pin_misalignment":
-        if m["misalignment_mm"] >= 0.30:
-            return "critical", "hold"
-        if m["misalignment_mm"] >= 0.20:
-            return "high", "reinspect"
-        if m["misalignment_mm"] >= 0.12 or confidence < 0.75:
-            return "medium", "reinspect"
-        return "low", "monitor"
-    if category == "surface_scratch":
-        if m["scratch_length_mm"] >= 10.0:
-            return "high", "hold"
-        if m["scratch_length_mm"] >= 6.0:
-            return "medium", "reinspect"
-        if m["scratch_length_mm"] > 0:
-            return "low", "monitor"
-        return "low", "pass"
-    if category == "no_material_issue":
-        return "low", "pass"
-    return "low", "reinspect"
+def validate_translations(translations: Any, joined_reports: List[Dict[str, Any]]) -> None:
+    if not isinstance(translations, list):
+        raise ValueError("Translation response must contain a translations array.")
+    expected_ids = [item["report_id"] for item in joined_reports]
+    observed_ids = [item.get("report_id") for item in translations if isinstance(item, dict)]
+    if len(observed_ids) != len(translations) or len(observed_ids) != len(set(observed_ids)):
+        raise ValueError("Translation response contains invalid or duplicate report IDs.")
+    if set(observed_ids) != set(expected_ids):
+        raise ValueError("Translation response does not match input report IDs.")
+    originals = {item["report_id"]: item["original_operator_note"] for item in joined_reports}
+    for item in translations:
+        if not isinstance(item.get("original_language"), str) or not item["original_language"].strip():
+            raise ValueError(f"Translation for {item['report_id']} has no source language.")
+        if not isinstance(item.get("note_for_interpretation"), str) or not item["note_for_interpretation"].strip():
+            raise ValueError(f"Translation for {item['report_id']} has no interpretation text.")
+        if not isinstance(item.get("translated"), bool):
+            raise ValueError(f"Translation for {item['report_id']} has an invalid translated flag.")
+        english_source = is_english(item["original_language"])
+        if item["translated"] == english_source:
+            raise ValueError(f"Translation flag does not match the source language for {item['report_id']}.")
+        if english_source and item["note_for_interpretation"] != originals[item["report_id"]]:
+            raise ValueError(f"English note {item['report_id']} must be preserved unchanged.")
+        if not english_source and item["note_for_interpretation"] == originals[item["report_id"]]:
+            raise ValueError(f"Non-English note {item['report_id']} was not translated.")
 
 
-def reason_for(category: str, severity: str, report: Dict[str, Any], normalised: Dict[str, Any]) -> str:
-    m = report["measurements"]
-    if category == "solder_voiding":
-        return f"{severity} solder voiding based on void_ratio {m['void_ratio']:.2f} and note evidence."
-    if category == "pin_misalignment":
-        return f"{severity} pin alignment concern based on {m['misalignment_mm']:.2f} mm misalignment and note evidence."
-    if category == "surface_scratch":
-        return f"{severity} surface scratch based on {m['scratch_length_mm']:.1f} mm scratch evidence."
-    if category == "no_material_issue":
-        return "No material defect signal exceeded the review thresholds."
-    return "Insufficiently aligned signals; human review recommended."
-
-
-def local_interpret_reports(reports: List[Dict[str, Any]], normalised: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    normalised_by_id = {item["report_id"]: item for item in normalised}
-    interpreted = []
-    for report in reports:
-        norm = normalised_by_id[report["report_id"]]
-        category = infer_category(report, norm)
-        severity, disposition = infer_severity_and_disposition(category, report)
-        interpreted.append(
-            {
-                "report_id": report["report_id"],
-                "defect_category": category,
-                "severity": severity,
-                "disposition": disposition,
-                "reason_short": reason_for(category, severity, report, norm),
-                "translated": norm["translated"],
-                "original_language": norm["original_language"],
-            }
-        )
-    return interpreted
-
-
-def call_openai_json(prompt_payload: Dict[str, Any]) -> Any:
+def call_openai_json(prompt_payload: Dict[str, Any]) -> Tuple[Any, str, str]:
     api_key = os.environ.get("OPENAI_API_KEY", "")
-    model = os.environ.get("LLM_MODEL", "gpt-4o-mini")
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY is not set.")
     body = {
-        "model": model,
+        "model": selected_llm_model(),
         "input": [
             {
                 "role": "system",
@@ -342,40 +307,75 @@ def call_openai_json(prompt_payload: Dict[str, Any]) -> Any:
                 text_parts.append(content.get("text", ""))
     if not text_parts:
         raise RuntimeError("OpenAI response did not include output text.")
-    return json.loads("".join(text_parts))
+    response_id = payload.get("id")
+    response_model = payload.get("model")
+    if not isinstance(response_id, str) or not response_id.strip():
+        raise RuntimeError("OpenAI response did not include a response ID.")
+    if not isinstance(response_model, str) or not response_model.strip():
+        raise RuntimeError("OpenAI response did not identify the model used.")
+    return json.loads("".join(text_parts)), response_id, response_model
 
 
 def validate_interpretations(interpreted: List[Dict[str, Any]], report_ids: Iterable[str]) -> None:
+    if not isinstance(interpreted, list):
+        raise ValueError("Interpretation response must contain an interpreted_reports array.")
     expected_ids = set(report_ids)
-    observed_ids = {item.get("report_id") for item in interpreted}
-    if observed_ids != expected_ids:
+    observed_ids = [item.get("report_id") for item in interpreted if isinstance(item, dict)]
+    if (
+        len(observed_ids) != len(interpreted)
+        or len(observed_ids) != len(set(observed_ids))
+        or set(observed_ids) != expected_ids
+    ):
         raise ValueError("Interpreted reports do not match input report IDs.")
     for item in interpreted:
+        required = {
+            "report_id",
+            "defect_category",
+            "severity",
+            "disposition",
+            "reason_short",
+            "translated",
+            "original_language",
+        }
+        missing = required - item.keys()
+        if missing:
+            raise ValueError(f"Interpretation {item.get('report_id')} is missing fields: {sorted(missing)}")
         if item["defect_category"] not in DEFECT_CATEGORIES:
             raise ValueError(f"Invalid defect category: {item['defect_category']}")
         if item["severity"] not in SEVERITIES:
             raise ValueError(f"Invalid severity: {item['severity']}")
         if item["disposition"] not in DISPOSITIONS:
             raise ValueError(f"Invalid disposition: {item['disposition']}")
+        if not isinstance(item["reason_short"], str) or not item["reason_short"].strip():
+            raise ValueError(f"Interpretation {item['report_id']} has no reason_short.")
+        if not isinstance(item["translated"], bool) or not isinstance(item["original_language"], str):
+            raise ValueError(f"Interpretation {item['report_id']} has invalid translation metadata.")
 
 
-def maybe_call_openai(prompt_payload: Dict[str, Any]) -> Any:
-    provider = selected_llm_provider()
-    if provider != "openai":
-        raise RuntimeError("External provider disabled; using local deterministic model.")
+def call_llm_json(prompt_payload: Dict[str, Any]) -> Tuple[Any, str, str]:
+    if selected_llm_provider() != "openai":
+        raise RuntimeError("Only the OpenAI LLM provider is supported.")
     return call_openai_json(prompt_payload)
 
 
 def selected_llm_provider() -> str:
     configured = os.environ.get("LLM_PROVIDER", "").strip().lower()
-    if configured:
-        return configured
-    if os.environ.get("OPENAI_API_KEY", "").strip():
-        return "openai"
-    return "local"
+    if configured and configured != "openai":
+        raise RuntimeError(f"Unsupported LLM_PROVIDER '{configured}'; configure 'openai'.")
+    if not os.environ.get("OPENAI_API_KEY", "").strip():
+        raise RuntimeError("OPENAI_API_KEY is not set; real LLM calls are required to run this pipeline.")
+    return "openai"
+
+
+def selected_llm_model() -> str:
+    return os.environ.get("LLM_MODEL", "").strip() or "gpt-4o-mini"
 
 
 def interpret_reports(reports: List[Dict[str, Any]], normalised: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    reports_without_original_notes = [
+        {key: value for key, value in report.items() if key != "operator_note"}
+        for report in reports
+    ]
     prompt_payload = {
         "stage": "report_interpretation",
         "schema": {
@@ -387,121 +387,71 @@ def interpret_reports(reports: List[Dict[str, Any]], normalised: List[Dict[str, 
             "translated": "boolean",
             "original_language": "string",
         },
-        "instruction": "Interpret each report using note text and structured measurements. Do not invent vocabulary values.",
+        "instruction": (
+            "Interpret every report using both its English note and structured measurements. "
+            "Return exactly one record per report_id. Use only the provided controlled vocabulary values; "
+            "do not invent category, severity, or disposition values."
+        ),
         "normalised_reports": normalised,
-        "raw_reports": reports,
+        "structured_reports": reports_without_original_notes,
     }
-    provider = selected_llm_provider()
-    model = os.environ.get("LLM_MODEL", "deterministic-inspection-v1")
-    try:
-        output = maybe_call_openai(prompt_payload)
-        interpreted = output.get("interpreted_reports", output)
-        validate_interpretations(interpreted, [report["report_id"] for report in reports])
-        provider_name = provider
-    except Exception:
-        interpreted = local_interpret_reports(reports, normalised)
-        validate_interpretations(interpreted, [report["report_id"] for report in reports])
-        provider_name = "local-deterministic"
-        model = "inspection-rules-v1"
+    output, response_id, response_model = call_llm_json(prompt_payload)
+    interpreted = output.get("interpreted_reports")
+    validate_interpretations(interpreted, [report["report_id"] for report in reports])
+    normalised_by_id = {item["report_id"]: item for item in normalised}
+    for item in interpreted:
+        source = normalised_by_id[item["report_id"]]
+        if item["translated"] != source["translated"] or item["original_language"] != source["original_language"]:
+            raise ValueError(f"Interpretation translation metadata does not match {item['report_id']}.")
     write_json("interpreted_reports.json", interpreted)
-    log_llm_call("report_interpretation", provider_name, model, prompt_payload, ["normalised_reports.json"], "interpreted_reports.json")
+    log_llm_call(
+        "report_interpretation",
+        "openai",
+        response_model,
+        prompt_payload,
+        ["normalised_reports.json", "inspection_reports.json"],
+        "interpreted_reports.json",
+        response_id,
+        (report["report_id"] for report in reports),
+    )
     return interpreted
 
 
-def pattern_group_key(report: Dict[str, Any], interpretation: Dict[str, Any]) -> Tuple[str, str, str]:
-    category = interpretation["defect_category"]
-    if category == "solder_voiding":
-        return category, report["part_id"], report["station"]
-    if category == "surface_scratch":
-        return category, report["part_id"], report["station"]
-    if category == "pin_misalignment":
-        return category, report["part_id"], "alignment"
-    return category, report["part_id"], report["station"]
-
-
-def describe_pattern(category: str, reports: List[Dict[str, Any]], catalog_by_id: Dict[str, Dict[str, Any]]) -> Tuple[str, str, str]:
-    part = catalog_by_id[reports[0]["part_id"]]
-    station_names = ", ".join(sorted({report["station"] for report in reports}))
-    if category == "solder_voiding":
-        return (
-            f"Recurring solder voiding on {part['part_name']}",
-            f"Repeated void signatures around the same part family and station path: {station_names}.",
-            "Hold affected cases for quality review and check solder process settings before next release.",
-        )
-    if category == "pin_misalignment":
-        return (
-            f"Recurring pin alignment concern on {part['part_name']}",
-            f"Multiple alignment findings on {part['part_name']} suggest placement or fixture drift.",
-            "Reinspect alignment on recent lots and verify fixture calibration.",
-        )
-    if category == "surface_scratch":
-        return (
-            f"Recurring surface scratch on {part['part_name']}",
-            f"Repeated scratch findings from {station_names} indicate a possible handling or rework issue.",
-            "Inspect station handling path and sample adjacent units for the same scratch signature.",
-        )
-    return (
-        f"Recurring uncertain signal on {part['part_name']}",
-        "Multiple related low-certainty signals require human triage.",
-        "Review supporting images before changing production posture.",
-    )
-
-
-def local_group_patterns(
-    reports: List[Dict[str, Any]],
-    catalog: List[Dict[str, Any]],
-    normalised: List[Dict[str, Any]],
-    interpreted: List[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
-    interpretations = {item["report_id"]: item for item in interpreted}
-    groups: Dict[Tuple[str, str, str], List[Dict[str, Any]]] = defaultdict(list)
-    for report in reports:
-        interpretation = interpretations[report["report_id"]]
-        if interpretation["defect_category"] in {"no_material_issue", "uncertain"}:
-            continue
-        groups[pattern_group_key(report, interpretation)].append(report)
-
-    catalog_by_id = {part["part_id"]: part for part in catalog}
-    patterns = []
-    for _, group in sorted(groups.items(), key=lambda item: min(parse_ts(r["timestamp"]) for r in item[1])):
-        if len(group) < 2:
-            continue
-        category = interpretations[group[0]["report_id"]]["defect_category"]
-        title, driver, action = describe_pattern(category, group, catalog_by_id)
-        high_measurements = 0
-        for report in group:
-            m = report["measurements"]
-            if m["void_ratio"] >= 0.20 or m["misalignment_mm"] >= 0.20 or m["scratch_length_mm"] >= 6.0:
-                high_measurements += 1
-        if len(group) >= 3 or high_measurements >= 2:
-            strength = "strong"
-        elif len(group) == 2:
-            strength = "moderate"
-        else:
-            strength = "weak"
-        patterns.append(
-            {
-                "pattern_id": f"P{len(patterns) + 1:03d}",
-                "title": title,
-                "supporting_report_ids": [report["report_id"] for report in sorted(group, key=lambda r: r["timestamp"])],
-                "pattern_strength": strength,
-                "likely_driver": driver,
-                "recommended_action": action,
-            }
-        )
-    return patterns
-
-
 def validate_patterns(patterns: List[Dict[str, Any]], report_ids: Iterable[str]) -> None:
+    if not isinstance(patterns, list):
+        raise ValueError("Pattern response must contain a patterns array.")
     valid_report_ids = set(report_ids)
+    pattern_ids = []
     for pattern in patterns:
+        required = {
+            "pattern_id",
+            "title",
+            "supporting_report_ids",
+            "pattern_strength",
+            "likely_driver",
+            "recommended_action",
+        }
+        missing = required - pattern.keys()
+        if missing:
+            raise ValueError(f"Pattern is missing fields: {sorted(missing)}")
+        pattern_ids.append(pattern["pattern_id"])
+        if any(not isinstance(pattern[field], str) or not pattern[field].strip() for field in (
+            "pattern_id", "title", "likely_driver", "recommended_action"
+        )):
+            raise ValueError(f"Pattern {pattern.get('pattern_id')} has empty text fields.")
         if pattern["pattern_strength"] not in PATTERN_STRENGTHS:
             raise ValueError(f"Invalid pattern strength: {pattern['pattern_strength']}")
+        if not isinstance(pattern["supporting_report_ids"], list):
+            raise ValueError(f"Pattern {pattern['pattern_id']} must list supporting report IDs.")
         if len(pattern["supporting_report_ids"]) < 2:
             raise ValueError(f"Pattern {pattern['pattern_id']} has fewer than two reports.")
+        if len(pattern["supporting_report_ids"]) != len(set(pattern["supporting_report_ids"])):
+            raise ValueError(f"Pattern {pattern['pattern_id']} repeats a supporting report ID.")
         unknown = set(pattern["supporting_report_ids"]) - valid_report_ids
         if unknown:
             raise ValueError(f"Pattern {pattern['pattern_id']} references unknown reports: {sorted(unknown)}")
+    if len(pattern_ids) != len(set(pattern_ids)):
+        raise ValueError("Pattern IDs must be unique.")
 
 
 def group_patterns(
@@ -540,29 +490,26 @@ def group_patterns(
             "likely_driver": "string",
             "recommended_action": "string",
         },
-        "instruction": "Identify recurring patterns using interpreted reports and supporting metadata.",
+        "instruction": (
+            "Identify recurring issue patterns from the interpreted category and severity together with report "
+            "metadata, timestamps, stations, measurements, confidence, and translated notes. Do not group from "
+            "raw notes alone. Each pattern must have at least two distinct supporting report IDs."
+        ),
         "reports": context,
     }
-    provider = selected_llm_provider()
-    model = os.environ.get("LLM_MODEL", "deterministic-inspection-v1")
-    try:
-        output = maybe_call_openai(prompt_payload)
-        patterns = output.get("patterns", output)
-        validate_patterns(patterns, [report["report_id"] for report in reports])
-        provider_name = provider
-    except Exception:
-        patterns = local_group_patterns(reports, catalog, normalised, interpreted)
-        validate_patterns(patterns, [report["report_id"] for report in reports])
-        provider_name = "local-deterministic"
-        model = "inspection-rules-v1"
+    output, response_id, response_model = call_llm_json(prompt_payload)
+    patterns = output.get("patterns")
+    validate_patterns(patterns, [report["report_id"] for report in reports])
     write_json("patterns.json", patterns)
     log_llm_call(
         "pattern_grouping",
-        provider_name,
-        model,
+        "openai",
+        response_model,
         prompt_payload,
         ["interpreted_reports.json", "normalised_reports.json", "inspection_reports.json", "parts_catalog.json"],
         "patterns.json",
+        response_id,
+        (report["report_id"] for report in reports),
     )
     return patterns
 
@@ -635,43 +582,22 @@ def compute_priority_scores(
     return scored
 
 
-def local_route_cases(flagged: List[Dict[str, Any]], patterns: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    routes = []
-    for case in flagged:
-        category = case["defect_category"]
-        teams = ["Quality"]
-        if category == "solder_voiding":
-            teams.append("Process Engineering")
-        elif category == "pin_misalignment":
-            teams.append("Manufacturing")
-        elif category == "surface_scratch":
-            teams.append("Manufacturing")
-            if case["pattern_ids"]:
-                teams.append("Process Engineering")
-        if case["disposition"] == "hold" and "Manufacturing" not in teams:
-            teams.append("Manufacturing")
-        pattern_text = f" recurring pattern {', '.join(case['pattern_ids'])}" if case["pattern_ids"] else " no recurring pattern"
-        routes.append(
-            {
-                "report_id": case["report_id"],
-                "teams": teams,
-                "briefing_note": (
-                    f"{case['severity']} {category} on {case['part_name']} scored {case['priority_score']} with"
-                    f"{pattern_text}; review disposition is {case['disposition']}."
-                ),
-            }
-        )
-    return routes
-
-
 def validate_routes(routes: List[Dict[str, Any]], flagged_ids: Iterable[str]) -> None:
+    if not isinstance(routes, list):
+        raise ValueError("Routing response must contain a case_routing array.")
     expected = set(flagged_ids)
-    observed = {route["report_id"] for route in routes}
-    if observed != expected:
+    observed = [route.get("report_id") for route in routes if isinstance(route, dict)]
+    if len(observed) != len(routes) or len(observed) != len(set(observed)) or set(observed) != expected:
         raise ValueError("Case routing does not cover exactly the flagged cases.")
     for route in routes:
+        required = {"report_id", "teams", "briefing_note"}
+        missing = required - route.keys()
+        if missing:
+            raise ValueError(f"Routing for {route.get('report_id')} is missing fields: {sorted(missing)}")
         if not route.get("briefing_note"):
             raise ValueError(f"Routing for {route['report_id']} is missing a briefing note.")
+        if not isinstance(route["teams"], list) or not route["teams"]:
+            raise ValueError(f"Routing for {route['report_id']} must include at least one owner team.")
         invalid = set(route.get("teams", [])) - OWNER_TEAMS
         if invalid:
             raise ValueError(f"Routing for {route['report_id']} has invalid teams: {sorted(invalid)}")
@@ -685,30 +611,26 @@ def route_cases(flagged: List[Dict[str, Any]], patterns: List[Dict[str, Any]]) -
             "teams": sorted(OWNER_TEAMS),
             "briefing_note": "string",
         },
-        "instruction": "Route each flagged case to one or more owner teams from the controlled vocabulary.",
+        "instruction": (
+            "Route every flagged case to one or more relevant teams from the controlled vocabulary. "
+            "Return concise internal handoff briefing notes and exactly one route per report_id."
+        ),
         "flagged_cases": flagged,
         "patterns": patterns,
     }
-    provider = selected_llm_provider()
-    model = os.environ.get("LLM_MODEL", "deterministic-inspection-v1")
-    try:
-        output = maybe_call_openai(prompt_payload)
-        routes = output.get("case_routing", output)
-        validate_routes(routes, [case["report_id"] for case in flagged])
-        provider_name = provider
-    except Exception:
-        routes = local_route_cases(flagged, patterns)
-        validate_routes(routes, [case["report_id"] for case in flagged])
-        provider_name = "local-deterministic"
-        model = "inspection-rules-v1"
+    output, response_id, response_model = call_llm_json(prompt_payload)
+    routes = output.get("case_routing")
+    validate_routes(routes, [case["report_id"] for case in flagged])
     write_json("case_routing.json", routes)
     log_llm_call(
         "case_routing",
-        provider_name,
-        model,
+        "openai",
+        response_model,
         prompt_payload,
         ["priority_scores.json", "patterns.json"],
         "case_routing.json",
+        response_id,
+        (case["report_id"] for case in flagged),
     )
     return routes
 
@@ -897,6 +819,7 @@ def generate_reinspection_plan(patterns: List[Dict[str, Any]], priority_scores: 
 
 def run_pipeline() -> None:
     load_env()
+    selected_llm_provider()
     for artifact in GENERATED_ARTIFACTS:
         path = Path(artifact)
         if path.exists():
@@ -908,25 +831,55 @@ def run_pipeline() -> None:
     record_stage(stage_log, "INPUTS_LOADED", ["inspection_reports.json", "parts_catalog.json"])
 
     normalised = normalise_reports(reports, catalog)
-    record_stage(stage_log, "REPORTS_NORMALISED", ["normalised_reports.json"])
+    record_stage(
+        stage_log,
+        "REPORTS_NORMALISED",
+        ["normalised_reports.json"],
+        ["inspection_reports.json", "parts_catalog.json"],
+    )
 
     interpreted = interpret_reports(reports, normalised)
-    record_stage(stage_log, "REPORTS_INTERPRETED", ["interpreted_reports.json"])
+    record_stage(
+        stage_log,
+        "REPORTS_INTERPRETED",
+        ["interpreted_reports.json"],
+        ["normalised_reports.json", "inspection_reports.json"],
+    )
 
     patterns = group_patterns(reports, catalog, normalised, interpreted)
-    record_stage(stage_log, "PATTERNS_GROUPED", ["patterns.json"])
+    record_stage(
+        stage_log,
+        "PATTERNS_GROUPED",
+        ["patterns.json"],
+        ["interpreted_reports.json", "normalised_reports.json", "inspection_reports.json", "parts_catalog.json"],
+    )
 
     priority_scores = compute_priority_scores(reports, catalog, interpreted, patterns)
-    record_stage(stage_log, "PRIORITIES_COMPUTED", ["priority_scores.json"])
+    record_stage(
+        stage_log,
+        "PRIORITIES_COMPUTED",
+        ["priority_scores.json"],
+        ["interpreted_reports.json", "patterns.json", "inspection_reports.json", "parts_catalog.json"],
+    )
 
     flagged = [item for item in priority_scores if item["flagged_for_review"]]
-    record_stage(stage_log, "CASES_SELECTED", ["priority_scores.json"])
+    record_stage(stage_log, "CASES_SELECTED", ["priority_scores.json"], ["priority_scores.json"])
 
     routes = route_cases(flagged, patterns)
-    record_stage(stage_log, "ROUTING_COMPLETE", ["case_routing.json"])
+    record_stage(
+        stage_log,
+        "ROUTING_COMPLETE",
+        ["case_routing.json"],
+        ["priority_scores.json", "patterns.json"],
+    )
 
     generate_review_summaries(flagged, routes, patterns)
-    record_stage(stage_log, "EXPLANATIONS_GENERATED", ["review_summaries.md"])
+    record_stage(
+        stage_log,
+        "EXPLANATIONS_GENERATED",
+        ["review_summaries.md"],
+        ["priority_scores.json", "patterns.json", "case_routing.json"],
+    )
 
     generate_shift_trends(reports, catalog, interpreted, patterns)
     find_disagreements(reports, interpreted)
@@ -937,6 +890,7 @@ def run_pipeline() -> None:
         stage_log,
         "VALIDATION_COMPLETE",
         ["shift_trends.json", "disagreement_cases.json", "alert_rating.json", "reinspection_plan.md"],
+        ["inspection_reports.json", "parts_catalog.json", "interpreted_reports.json", "patterns.json", "priority_scores.json"],
     )
     record_stage(stage_log, "RESULTS_FINALISED", GENERATED_ARTIFACTS)
     write_json("pipeline_state.json", {"stages": stage_log})

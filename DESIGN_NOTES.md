@@ -77,7 +77,7 @@ Pattern strengths:
 - weak
 ```
 
-Any model output outside these vocabularies is rejected or normalised through a strict repair step before the artifact is accepted.
+Any model output outside these vocabularies is rejected. The pipeline does not substitute local heuristic outputs for failed or invalid model responses.
 
 ## Artifact Flow
 
@@ -139,11 +139,13 @@ The `original_operator_note` remains unchanged. `note_for_interpretation` contai
 
 For the public fixture, report `R09` contains Malay and must be translated before interpretation.
 
-Implementation preference:
+Implementation:
 
-- Use a deterministic language-detection helper for obvious local cases.
-- Use the configured LLM provider for translation only when required.
-- Preserve the source language code, for example `en` or `ms`.
+- A batch LLM request identifies each source language and translates non-English notes before interpretation.
+- English notes are preserved byte-for-byte as text.
+- The translation request and provider response ID are recorded in `llm_calls.jsonl`.
+- Preserve the source language code, for example `en`, `ms`, or `es`.
+- Fail clearly if translation cannot be completed; do not pass untranslated notes downstream.
 
 Output:
 
@@ -153,7 +155,7 @@ normalised_reports.json
 
 ### 3. Report Interpretation
 
-This stage makes one Stage 1 LLM call using all normalised reports.
+This stage makes one Stage 1 LLM call using all normalised reports. Original operator notes are not resent in this call; the English interpretation text and structured measurements are used.
 
 The prompt includes:
 
@@ -426,12 +428,13 @@ Required fields:
 
 Required log entries:
 
+- note language detection and translation
 - report interpretation
 - recurring pattern grouping
 - case routing
 - optional analysis stages if they use an LLM
 
-The `prompt_hash` is computed from the final prompt payload sent to the model. This gives reviewers a lightweight audit trail without storing secrets.
+Each required call is made to the configured OpenAI provider. Its log records the actual model and provider response ID; local heuristic fallback is not permitted. The `prompt_hash` is computed from the final prompt payload sent to the model. This gives reviewers a lightweight audit trail without storing secrets.
 
 ## Configuration
 
@@ -445,7 +448,7 @@ LLM_MODEL=gpt-4o-mini
 OPENAI_API_KEY=<provided externally>
 ```
 
-The repository should not commit real API keys. `.env` can be supported locally, but secrets must remain outside generated artifacts and logs.
+The repository should not commit real API keys. `.env` can be supported locally, but secrets must remain outside generated artifacts and logs. Set `OPENAI_API_KEY` in the execution environment (or a private, ignored local `.env`) before running `make run`. The pipeline fails before deleting previous artifacts if no key or supported provider is configured.
 
 ## Validation Command
 
@@ -455,7 +458,7 @@ The repository should include a validation entry point such as:
 python validate.py
 ```
 
-or:
+`python validate.py` checks the existing generated artifacts. The clean-run target regenerates them with the configured LLM, runs the mocked integration/failure-path tests, and then validates the fresh outputs:
 
 ```bash
 make validate
@@ -476,13 +479,15 @@ Validation checks:
 - routing teams use only the controlled owner vocabulary
 - every flagged case appears in `review_summaries.md`
 - every flagged case has a human review gate note
-- `llm_calls.jsonl` contains separate records for required LLM stages
+- `llm_calls.jsonl` contains exactly one successful provider response record for translation, interpretation, pattern grouping, and routing, with response IDs, model, timestamp, prompt hash, and artifact inputs/outputs
+- every flagged case has its own complete reviewer section and human review gate
+- pipeline stage inputs prove that pattern grouping receives interpreted data and scoring follows grouping
 
 ## Error Handling
 
 The pipeline should fail fast for structural input problems, unknown vocabulary values, missing reports, invalid JSON, missing part metadata, or inconsistent artifact counts.
 
-LLM output should be parsed as strict JSON. If parsing fails or categorical values are invalid, the implementation may attempt one bounded repair call, but the repair call must also be logged. If repair still fails, the pipeline exits with a clear validation error.
+LLM output is parsed as strict JSON and checked against required fields and controlled vocabularies. Invalid output or provider failures stop the pipeline with a clear error; the pipeline never records heuristic results as LLM calls.
 
 ## Replayability Notes
 

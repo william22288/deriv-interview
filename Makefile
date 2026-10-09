@@ -1,9 +1,13 @@
-.PHONY: run validate clean
+.PHONY: run test validate clean
 
 run:
 	python pipeline.py
 
-validate:
+test:
+	python -m unittest -v test_pipeline
+
+validate: run
+	python -m unittest -v test_pipeline
 	python validate.py
 
 clean:
